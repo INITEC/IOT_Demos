@@ -1,32 +1,49 @@
 /*
+*  ARD_asServer_withRELAY
+*  
 *  El siguiente programa utiliza un arduino con un shield de Ethernet
 *  el arduino trabaja como un servidor, recibiendo las consultas desde cualquier
-*  dispositivo conectado a su misma LAN, con una senal de salida digital activa o 
+*  dispositivo conectado a su misma LAN, con una senial de salida digital activa o 
 *  desactiva un relay por medido de las consultas enviadas desde los otros dispositivos
 *  conectados en la misma red.
 *  CONSIDERAICION
 *  Para este ejemplo, se requiere que el shield de ethernet este conectado a un router con DHCP
+*  @version v1.0
+*  @autor Juan Basilio
+*  @implementacion Juan Basilio
 */
 
 #include <SPI.h>
 #include <Ethernet.h>
 
-// Configuracion por defecto
+/*
+*  Configuracion IP
+*  @global byte mac - Direccion mac de la tarjeta Ethernet
+*  @global IPAddress ip - Definicion de una ip por defecto
+*  @global EthernetServer server(80) - creacion de un objeto de tipo servidor que brinda servicio por el puerto 80
+*  
+*/
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 IPAddress ip(192,168,0,177);
-
-// Definimos al arduino como servidor web por el puerto 80
 EthernetServer server(80);
 
-// Definimos la constante del led que se encendera
-#define pinControl 3
-
+/*
+*  Definimos las variables del caso especifico
+*  @global define pinControl - Es la posicion del pin digital que se utilizara para el control
+*  @global String estado - Es el estado actual del pin de control
+*/
+#define pinControl 8
 String estado="OFF"; //Estado del Led inicialmente "OFF"
 
 void setup(){
-  Serial.begin(9600);
+  // Estableciendo puertos como salida para el primer led RGB
+  pinMode(pinControl, OUTPUT);
+  digitalWrite(pinControl,LOW);  // Nos aseguramos de iniciar el pin en LOW
+  
+  Serial.begin(9600);  // Iniciamos la comunicacion serial con la computadora
   delay(1000);
-  Serial.print("Esperando obtener IP ... ");
+  Serial.println("SSID: REDWP  PASSWORD: wapo.initec");
+  Serial.println("Esperando obtener IP ... ");
   // Probamos iniciar la tarjeta de red con DHCP
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
@@ -39,8 +56,7 @@ void setup(){
   
   server.begin();
   
-  // Estableciendo puertos como salida para el primer led RGB
-  pinMode(pinControl, OUTPUT);
+  
 
 }// Fin setup()
 
