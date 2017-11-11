@@ -45,7 +45,8 @@ EthernetClient client;
 
 
 void setup(){
-
+  Serial.begin(9600);  // Iniciamos la comunicacion serial con la computadora
+  delay(1000);
   // Probamos iniciar la tarjeta de red con DHCP
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
@@ -53,8 +54,9 @@ void setup(){
     // try to congifure using IP address instead of DHCP:
     Ethernet.begin(mac, ip);
   }
-  Serial.begin(9600);  // Iniciamos la comunicacion serial con la computadora
-  delay(1000);
+  Serial.print("My IP address: ");
+  Serial.println(Ethernet.localIP());
+  
 }
 
 void loop(){
@@ -103,7 +105,7 @@ float read_port(int analogPin){
   Serial.print(" : ");
   Serial.println(val);
   delay(10);
-  return val
+  return val;
 }
 
 /*
@@ -112,12 +114,13 @@ float read_port(int analogPin){
 *  @return void
 */
 void httpRequest() {
+  Serial.println("Iniciando");
   // if there's a successful connection:
   if (client.connect(server, 80)) {
     Serial.println("connecting...");
     val0 = read_port(analogPin0);
     // send the HTTP PUT request:
-    client.print("GET /lectura.sensor.php?id1="); // Envia los datos utilizando GET
+    client.print("GET /controller/set.dataMeasure.php?id1="); // Envia los datos utilizando GET
     client.print(id0);
     client.print("&v1=");
     client.print(val0);
@@ -125,7 +128,7 @@ void httpRequest() {
     client.println("Host: potenciometro.waposat.com");
     client.println("Connection: close");
     client.println();    
-    delay(500);
+    delay(5000);
   } 
   else {
     Serial.println("connection failed");
