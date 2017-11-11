@@ -1,10 +1,6 @@
 /*
-*  ARD_asClient_sendADC
+*  ARD_asClient_checkStatePotenciometro
 *  
-*  El siguiente programa utiliza un arduino con un shield de Ethernet
-*  el arduino trabaja como cliente, enviando consultas de tipo HTTP a un
-*  servidor remoto utilizando el metodo GET para envio de informacion,
-*  la informacion enviada por el arduino es la lectura de una senial analogica
 *
 *  CONSIDERAICION
 *  Para este ejemplo, se requiere un servicio web activo en un servidor conocido
@@ -21,15 +17,16 @@
 
 /*
 *  Definimos las variables de caso especifico
-*  @global int analogPin0 - Valor digital de la conversion de analogo a digital, varia entre 0 y 1023
-*  @global int id0 - Codigo identificador del potenciometro en la base de datos del servidor
-*  @global float val0 - Valor convertido entre 0.0 - 5.0
+*  @global define pinControl - Es la posicion del pin digital que se utilizara para el control
 *  @global boolean lastConnected - Estado de la conexion la ultima vez que se recorrio el loop
 */
-int analogPin0=0;
-int id0=1;          
-float val0=0.0;
+#define pinControl 8
+int id0=1; 
 boolean lastConnected = false;
+boolean flag=false;
+String estado="OFF"; //Estado del Led inicialmente "OFF"
+
+
 /*
 *  Configuracion IP
 *  @global byte mac - Direccion mac de la tarjeta Ethernet
@@ -45,6 +42,10 @@ EthernetClient client;
 
 
 void setup(){
+  
+  pinMode(pinControl, OUTPUT);
+  digitalWrite(pinControl,HIGH);  // Nos aseguramos de iniciar el pin en LOW
+  
   Serial.begin(9600);  // Iniciamos la comunicacion serial con la computadora
   delay(1000);
   // Probamos iniciar la tarjeta de red con DHCP
@@ -66,7 +67,8 @@ void loop(){
   */  
   if (client.available()) {
     char c = client.read();
-    Serial.print(c);
+    analizarRespuestaChar(c);
+    //Serial.print(c);
   }
   /*
   *  Se detiene al cliente una vez que se ha realizado una conexion y esta ha terminado
@@ -90,22 +92,29 @@ void loop(){
 }
 
 /*
-*  function read_port(int analogPin)
-*  Lee un puerto analogico con resolucion de 10bits
-*  y convierte el valor en uno entre 0.0 - 5.0
-*  @param int analogPin - Pin analogico que se utilizara para la conversion AD
-*  @return float - retorna el valor de la lectura analogica en un rango entre 0.0 - 5.0
+*  function analizarRespuestaChar(char c)
+*  Verifica la respuesta del servidor caracter por caracter
+*  @param char c - respuesta del servidor, en un caracter a la vez
+*  @return void
 *  @autor: Juan Basilio
 */
-float read_port(int analogPin){
-  float val = analogRead(analogPin);   //read the input pin
-  val=(val*5.0)/1023.0;
-  Serial.print("POTA");
-  Serial.print(analogPin);
-  Serial.print(" : ");
-  Serial.println(val);
-  delay(10);
-  return val;
+
+void analizarRespuestaChar(char c){
+  if (flag==true && c!='@'){
+      if(c=='1'){
+        Serial.println("Encendiendo");
+        changePin(1);
+      } else if (c=='0'){
+        Serial.println("Apagando");
+        changePin(0);
+      } else{
+        Serial.println("Estado no aceptado");
+      }
+      flag=false;
+  }
+  if (c=='@'){
+    flag=true;
+  }
 }
 
 /*
@@ -118,12 +127,9 @@ void httpRequest() {
   // if there's a successful connection:
   if (client.connect(server, 80)) {
     Serial.println("connecting...");
-    val0 = read_port(analogPin0);
     // send the HTTP PUT request:
-    client.print("GET /controller/set.dataMeasure.php?id1="); // Envia los datos utilizando GET
+    client.print("GET /controller/get.statePotenciometro.php?id="); // Envia los datos utilizando GET
     client.print(id0);
-    client.print("&v1=");
-    client.print(val0);
     client.println(" HTTP/1.1");
     client.println("Host: potenciometro.waposat.com");
     client.println("Connection: close");
@@ -134,5 +140,15 @@ void httpRequest() {
     Serial.println("connection failed");
     Serial.println("disconnecting.");
     client.stop();
+  }
+}
+
+void changePin(int state){
+  if (state == 0){
+    estado="OFF";
+    digitalWrite(pinControl,HIGH);
+  } else {
+    estado="ON";
+    digitalWrite(pinControl,LOW);
   }
 }
